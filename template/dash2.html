@@ -1,0 +1,245 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motorcycle Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            padding: 2rem;
+        }
+        .stats-container {
+            margin-bottom: 2rem;
+        }
+        .filter-container {
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #007bff;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            transition: transform 0.2s;
+        }
+        .chart-container:hover {
+            transform: translateY(-5px);
+        }
+        .chart-title {
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        svg {
+            width: 100%;
+            height: auto;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-5">Motorcycle Data Dashboard</h1>
+        <div class="stats-container">
+            <div class="row g-3">
+                <div class="col-md-6 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-title">Total Motorcycles</div>
+                        <div class="stat-value" id="total-motorcycles">0</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-sm-6">
+                    <div class="stat-card">
+                        <div class="stat-title">Average Price</div>
+                        <div class="stat-value" id="average-price">0 VND</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="filter-container">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="warranty-filter" class="form-label">Warranty Policy</label>
+                    <select id="warranty-filter" class="form-select">
+                        <option value="all">Tất cả</option>
+                        <option value="Có bảo hành">Có bảo hành</option>
+                        <option value="Không có bảo hành">Không có bảo hành</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="condition-filter" class="form-label">Condition</label>
+                    <select id="condition-filter" class="form-select">
+                        <option value="all">Tất cả</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="type-filter" class="form-label">Vehicle Type</label>
+                    <select id="type-filter" class="form-select">
+                        <option value="all">Tất cả</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 chart-container">
+                <h3 class="chart-title">Giá xe trung bình theo tỉnh thành</h3>
+                <div id="chart1"></div>
+            </div>
+            <div class="col-md-4 chart-container">
+                <h3 class="chart-title">Tỷ lệ xe có và không có bảo hành</h3>
+                <div id="chart2"></div>
+            </div>
+            <div class="col-md-4 chart-container">
+                <h3 class="chart-title">Số lượng xe theo phân phối động cơ</h3>
+                <div id="chart3"></div>
+            </div>
+            <div class="col-md-4 chart-container">
+                <h3 class="chart-title">Tổng quan giữa số KM đã sử dụng và giá xe</h3>
+                <div id="chart4"></div>
+            </div>
+            <div class="col-md-4 chart-container">
+                <h3 class="chart-title">Số lượng xe theo năm đăng kí</h3>
+                <div id="chart5"></div>
+            </div>
+            <div class="col-md-4 chart-container">
+                <h3 class="chart-title">Giá trung bình các loại xe theo năm đăng kí</h3>
+                <div id="chart6"></div>
+            </div>
+            <div class="col-md-4 chart-container">
+                <h3 class="chart-title">Tình trạng sử dụng theo loại xe</h3>
+                <div id="chart7"></div>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="{% url 'upload_csv' %}" class="btn btn-primary">Back to Upload</a>
+        </div>
+    </div>
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- D3 Dashboard Script -->
+    <script src="{% static 'dash2.js' %}"></script>
+    <script>
+        // Parse dữ liệu từ view
+        const vehicleData = {{ vehicle_data | safe }};
+
+
+        // Điền giá trị cho dropdown condition
+        const conditions = [...new Set(vehicleData.map(d => d.condition).filter(c => c))];
+        const conditionSelect = document.getElementById('condition-filter');
+        conditions.forEach(condition => {
+            const option = document.createElement('option');
+            option.value = condition;
+            option.textContent = condition;
+            conditionSelect.appendChild(option);
+        });
+
+        // Điền giá trị cho dropdown vehicle_type
+        const vehicleTypes = [...new Set(vehicleData.map(d => d.vehicle_type).filter(t => t))];
+        const typeSelect = document.getElementById('type-filter');
+        vehicleTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            typeSelect.appendChild(option);
+        });
+
+        // Hàm lọc dữ liệu và cập nhật dashboard
+        function updateDashboard() {
+            const warrantyFilter = document.getElementById('warranty-filter').value;
+            const conditionFilter = document.getElementById('condition-filter').value;
+            const typeFilter = document.getElementById('type-filter').value;
+
+            let filteredData = vehicleData;
+
+            // Lọc theo warranty_policy
+            if (warrantyFilter !== 'all') {
+                filteredData = filteredData.filter(d => 
+                    warrantyFilter === 'Có bảo hành' 
+                        ? d.warranty_policy && d.warranty_policy.toLowerCase().includes('yes')
+                        : !(d.warranty_policy && d.warranty_policy.toLowerCase().includes('yes'))
+                );
+            }
+
+            // Lọc theo condition
+            if (conditionFilter !== 'all') {
+                filteredData = filteredData.filter(d => d.condition === conditionFilter);
+            }
+
+            // Lọc theo vehicle_type
+            if (typeFilter !== 'all') {
+                filteredData = filteredData.filter(d => d.vehicle_type === typeFilter);
+            }
+
+            // Tính các chỉ số
+            const totalMotorcycles = filteredData.length;
+            const validPrices = filteredData.filter(d => d.price != null && !isNaN(d.price)).map(d => parseFloat(d.price));
+            const averagePrice = validPrices.length > 0 ? (validPrices.reduce((sum, p) => sum + p, 0) / validPrices.length).toFixed(2) : 0;
+
+            // Cập nhật chỉ số
+            document.getElementById('total-motorcycles').textContent = totalMotorcycles;
+            document.getElementById('average-price').textContent = `${averagePrice} VND`;
+
+            // Xóa các biểu đồ cũ
+            d3.selectAll("#chart1 svg, #chart2 svg, #chart3 svg, #chart4 svg, #chart5 svg, #chart6 svg, #chart7 svg").remove();
+
+            // Vẽ lại các biểu đồ
+            drawAveragePriceByCity(filteredData);
+            drawWarrantyPieChart(filteredData);
+            drawEngineCapacityTreemap(filteredData);
+            drawPriceVsKilometersScatter(filteredData);
+            drawVehiclesByYearBarChart(filteredData);
+            drawAveragePriceByYearLineChart(filteredData);
+            drawConditionByTypeBarChart(filteredData);
+        }
+
+        // Gắn sự kiện cho các dropdown
+        document.getElementById('warranty-filter').addEventListener('change', updateDashboard);
+        document.getElementById('condition-filter').addEventListener('change', updateDashboard);
+        document.getElementById('type-filter').addEventListener('change', updateDashboard);
+
+        // Khởi tạo dashboard
+        updateDashboard();
+    </script>
+</body>
+</html>
