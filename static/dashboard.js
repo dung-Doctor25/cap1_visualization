@@ -69,8 +69,8 @@ function drawSellerTreemap(data) {
 
 function drawCityBarChart(data) {
     const width = 500;
-    const height = 400;
-    const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+    const height = 450;
+    const margin = { top: 20, right: 30, bottom: 80, left: 40 };
 
     // Tạo tooltip
     const tooltip = d3.select("body")
@@ -144,26 +144,31 @@ function drawRatingPieChart(data) {
     const height = 400;
     const radius = Math.min(width, height) / 2 - 40;
 
-    // ✅ Nhóm rating theo seller_name
+    // Bước 1: Gom nhóm theo seller_name và phân loại
     const sellerGroups = d3.rollup(
         data,
         v => {
-            const rating = parseFloat(v[0].rating); // lấy rating đầu tiên của seller
-            if (isNaN(rating) || rating === 0) return "Không có đánh giá";
-            else if (rating <= 3) return "Đánh giá thấp";
-            else if (rating <= 5) return "Đánh giá cao";
+            // ✅ Giả sử mỗi seller chỉ có 1 rating, hoặc ta lấy rating đầu tiên
+            const rating = parseFloat(v[0].rating) || 0;
+
+            if (rating === null|| isNaN(rating) || rating === 0) return "Không có đánh giá";
+            else if (rating <= 3) return "Đánh giá thấp (1–3)";
+            else if (rating <= 5) return "Đánh giá cao (4–5)";
             else return "Không xác định";
         },
         d => d.seller_name
     );
 
-    // ✅ Đếm số lượng seller trong mỗi nhóm
+    // Bước 2: Đếm số seller trong từng nhóm để vẽ Pie Chart
     const ratingCount = d3.rollup(
-        Array.from(sellerGroups.values()),
+        Array.from(sellerGroups.values()), // ['Đánh giá thấp', 'Không có đánh giá', ...]
         v => v.length,
         d => d
     );
 
+    // ratingCount sẽ là Map: { "Đánh giá thấp (1–3)" => 10, "Đánh giá cao (4–5)" => 20, ... }
+
+    console.log(ratingCount);
     const pieData = Array.from(ratingCount, ([group, count]) => ({ group, count }));
 
     const svg = d3.select("#chart3")
@@ -207,9 +212,7 @@ function drawRatingPieChart(data) {
                 .style("top", (event.pageY - 30) + "px")
                 .style("left", (event.pageX + 10) + "px");
         })
-        .on("mouseout", () => tooltip.style("opacity", 0));
-
-
+        .on("mouseout", () => tooltip.style("opacity", 0));   
 }
 
 

@@ -79,12 +79,44 @@
         .table-container {
             max-height: 300px;
             overflow-y: auto;
+        }.custom-btn {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
+        .custom-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn-refresh {
+            background: linear-gradient(45deg, #28a745, #34d058);
+            border: none;
+            color: white;
+        }
+        .btn-filter {
+            background: linear-gradient(45deg, #007bff, #00aaff);
+            border: none;
+            color: white;
+        }
+        .btn-export {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            border: none;
+            color: white;
+        };
+
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-center mb-5">Seller Data Dashboard</h1>
+        <div class="text-center mb-4">
+            <a href="{% url 'visualization' %}" class="btn btn-refresh custom-btn">Market Dashboard</a>
+            <a href="{% url 'dash2' %}" class="btn btn-filter custom-btn">Vehicle Dashboard</a>
+            <a href="{% url 'dash3' %}" class="btn btn-export custom-btn">Seller Dashboard</a>
+        </div>
         <div class="stats-container">
             <div class="row g-3">
                 <div class="col-md-4 col-sm-6">
@@ -170,7 +202,7 @@
             </div>
         </div>
         <div class="text-center mt-4">
-            <a href="{% url 'upload_csv' %}" class="btn btn-primary">Back to Upload</a>
+            <a href="{% url 'main' %}" class="btn btn-primary">Back to Upload</a>
         </div>
     </div>
     <!-- Bootstrap 5 JS -->
@@ -181,6 +213,18 @@
         // Parse dữ liệu từ view
         const vehicleData = {{ vehicle_data | safe }};
 
+        function averageRating(data) {
+            const validRatings = data
+                .map(v => parseFloat(v.rating))      // lấy rating dạng số
+                .filter(r => !isNaN(r));             // bỏ null/undefined/NaN
+
+            const total = validRatings.reduce((sum, r) => sum + r, 0);
+            const average = validRatings.length ? total / validRatings.length : 0;
+            return average.toFixed(2);  // làm tròn 2 chữ số
+            }
+
+            const avg = averageRating(vehicleData);
+    console.log("Trung bình rating:", avg);
 
         // Điền giá trị cho dropdown city
         const cities = [...new Set(vehicleData.map(d => d.city).filter(c => c))];
@@ -191,40 +235,44 @@
             option.textContent = city;
             citySelect.appendChild(option);
         });
-
+        
         // Hàm lọc dữ liệu và cập nhật dashboard
         function updateDashboard() {
             const cityFilter = document.getElementById('city-filter').value;
             const policyFilter = document.getElementById('policy-filter').value;
-
+            
             let filteredData = vehicleData;
-
+            
             // Lọc theo city
             if (cityFilter !== 'all') {
                 filteredData = filteredData.filter(d => d.city === cityFilter);
             }
-
+            
             // Lọc theo seller_policy
             if (policyFilter !== 'all') {
                 filteredData = filteredData.filter(d => 
-                    policyFilter === 'Có' 
-                        ? d.seller_policy !== 'Không có'
-                        : d.seller_policy === 'Không có'
-                );
-            }
+                policyFilter === 'Có' 
+                ? d.seller_policy !== 'Không có'
+                : d.seller_policy === 'Không có'
+            );
+        }
+        
+        // Tính các chỉ số
+        const totalMotorcycles = filteredData.length;
+            const prices = filteredData.map(d => parseFloat(d.price));
+            const averagePrice = ((prices.reduce((sum, p) => sum + p, 0) / prices.length) / 1000000).toFixed(2) + 'M';
 
-            // Tính các chỉ số
-            const totalMotorcycles = filteredData.length;
-            const validPrices = filteredData.filter(d => d.price != null && !isNaN(d.price)).map(d => parseFloat(d.price));
-            const averagePrice = validPrices.length > 0 ? (validPrices.reduce((sum, p) => sum + p, 0) / validPrices.length).toFixed(2) : 0;
             const uniqueSellers = new Set(filteredData.map(d => d.seller_name)).size;
-            const postsPerSeller = uniqueSellers > 0 ? (totalMotorcycles / uniqueSellers).toFixed(2) : 0;
-            const validRatings = filteredData.filter(d => d.rating != null && d.rating > 0).map(d => parseFloat(d.rating));
-            const averageRating = validRatings.length > 0 ? (validRatings.reduce((sum, r) => sum + r, 0) / validRatings.length).toFixed(2) : 0;
-            const validNumRatings = filteredData.filter(d => d.num_ratings != null && d.num_ratings > 0).map(d => parseFloat(d.num_ratings));
-            const averageNumRatings = validNumRatings.length > 0 ? (validNumRatings.reduce((sum, n) => sum + n, 0) / validNumRatings.length).toFixed(2) : 0;
+            const postsPerSeller = uniqueSellers > 0 ? (totalMotorcycles / uniqueSellers).toFixed(0) : 0;
+
+            const ratings = filteredData.map(d => parseFloat(d.rating));
+            const averageRating = (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(2);
+
+            const numRatings = filteredData.map(d => parseFloat(d.num_ratings) || 0);
+            const averageNumRatings = (numRatings.reduce((sum, n) => sum + n, 0) / numRatings.length).toFixed(2);
 
             // Cập nhật chỉ số
+       
             document.getElementById('total-motorcycles').textContent = totalMotorcycles;
             document.getElementById('average-price').textContent = `${averagePrice} VND`;
             document.getElementById('total-sellers').textContent = uniqueSellers;

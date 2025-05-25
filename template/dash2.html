@@ -75,12 +75,44 @@
             font-size: 12px;
             pointer-events: none;
             z-index: 1000;
+        };
+        .custom-btn {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-weight: 500;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .custom-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn-refresh {
+            background: linear-gradient(45deg, #28a745, #34d058);
+            border: none;
+            color: white;
+        }
+        .btn-filter {
+            background: linear-gradient(45deg, #007bff, #00aaff);
+            border: none;
+            color: white;
+        }
+        .btn-export {
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
+            border: none;
+            color: white;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-center mb-5">Motorcycle Data Dashboard</h1>
+        <div class="text-center mb-4">
+            <a href="{% url 'visualization' %}" class="btn btn-refresh custom-btn">Market Dashboard</a>
+            <a href="{% url 'dash2' %}" class="btn btn-filter custom-btn">Vehicle Dashboard</a>
+            <a href="{% url 'dash3' %}" class="btn btn-export custom-btn">Seller Dashboard</a>
+        </div>
         <div class="stats-container">
             <div class="row g-3">
                 <div class="col-md-6 col-sm-6">
@@ -152,7 +184,7 @@
             </div>
         </div>
         <div class="text-center mt-4">
-            <a href="{% url 'upload_csv' %}" class="btn btn-primary">Back to Upload</a>
+            <a href="{% url 'main' %}" class="btn btn-primary">Back to Upload</a>
         </div>
     </div>
     <!-- Bootstrap 5 JS -->
@@ -214,7 +246,8 @@
             // Tính các chỉ số
             const totalMotorcycles = filteredData.length;
             const validPrices = filteredData.filter(d => d.price != null && !isNaN(d.price)).map(d => parseFloat(d.price));
-            const averagePrice = validPrices.length > 0 ? (validPrices.reduce((sum, p) => sum + p, 0) / validPrices.length).toFixed(2) : 0;
+            const prices = vehicleData.map(d => parseFloat(d.price));
+            const averagePrice = ((prices.reduce((sum, p) => sum + p, 0) / prices.length) / 1000000).toFixed(2) + 'M';
 
             // Cập nhật chỉ số
             document.getElementById('total-motorcycles').textContent = totalMotorcycles;

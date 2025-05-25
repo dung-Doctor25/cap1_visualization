@@ -5,16 +5,24 @@ function drawSellersByCity(data) {
     const height = 300;
     const margin = { top: 20, right: 30, bottom: 60, left: 50 };
 
-    // Process data: count unique seller_name by city
-    const sellerCount = d3.rollup(
+    // Tính unique seller_name và count vehicle_id theo city
+    const cityStats = d3.rollup(
         data,
-        v => new Set(v.map(d => d.seller_name)).size,
+        v => ({
+            sellerCount: new Set(v.map(d => d.seller_name)).size,
+            vehicleCount: v.length
+        }),
         d => d.city || "Unknown"
     );
-const barData = Array.from(sellerCount, ([city, count]) => ({ city, count }))
-    .sort((a, b) => b.count - a.count)  // Sắp giảm dần theo số người bán
-    .slice(0, 5);                       // Lấy top 5
-    // Nếu không có dữ liệu
+
+    const barData = Array.from(cityStats, ([city, stats]) => ({
+        city,
+        sellerCount: stats.sellerCount,
+        vehicleCount: stats.vehicleCount
+    }))
+    .sort((a, b) => b.sellerCount - a.sellerCount)  // Sắp giảm dần theo số seller
+    .slice(0, 5);                                   // Lấy top 5
+
     if (barData.length === 0) {
         d3.select("#chart1").append("text")
             .attr("x", width / 2)
@@ -36,7 +44,7 @@ const barData = Array.from(sellerCount, ([city, count]) => ({ city, count }))
         .padding(0.1);
 
     const y = d3.scaleLinear()
-        .domain([0, d3.max(barData, d => d.count) || 1])
+        .domain([0, d3.max(barData, d => d.sellerCount) || 1])
         .nice()
         .range([height - margin.bottom, margin.top]);
 
@@ -50,17 +58,21 @@ const barData = Array.from(sellerCount, ([city, count]) => ({ city, count }))
         .enter()
         .append("rect")
         .attr("x", d => x(d.city))
-        .attr("y", d => y(d.count))
+        .attr("y", d => y(d.sellerCount))
         .attr("width", x.bandwidth())
-        .attr("height", d => height - margin.bottom - y(d.count))
+        .attr("height", d => height - margin.bottom - y(d.sellerCount))
         .attr("fill", colorPalette[0])
         .attr("opacity", 0.8)
         .on("mouseover", function(event, d) {
             d3.select(this).attr("opacity", 1).attr("fill", colorPalette[1]);
             tooltip.transition().duration(200).style("opacity", 0.9);
-            tooltip.html(`City: ${d.city}<br>Sellers: ${d.count}`)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 10) + "px");
+            tooltip.html(
+                `City: ${d.city}<br>` +
+                `Sellers: ${d.sellerCount}<br>` +
+                `Vehicles: ${d.vehicleCount}`
+            )
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 10) + "px");
         })
         .on("mouseout", function() {
             d3.select(this).attr("opacity", 0.8).attr("fill", colorPalette[0]);
@@ -76,9 +88,8 @@ const barData = Array.from(sellerCount, ([city, count]) => ({ city, count }))
         .attr("y", 5)
         .style("text-anchor", "end")
         .style("font-size", "10px");
-
-
 }
+
 
 function drawSellerPolicyPieChart(data) {
     const width = 400;

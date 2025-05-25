@@ -1,8 +1,18 @@
 from django.shortcuts import render
 import pandas as pd
 from .models import Vehicle
-
+from django.core.paginator import Paginator
 def main(request):
+    return render(request, 'main.html')
+
+def vehicle_list(request):
+    vehicle_list = Vehicle.objects.all()
+    paginator = Paginator(vehicle_list, 100)  # 100 vehicles per page
+    page_number = request.GET.get('page')
+    vehicles = paginator.get_page(page_number)
+    return render(request, 'vehicle_table.html', {'vehicles': vehicles})
+def delete_vehicle(request):
+    count, _ = Vehicle.objects.all().delete()
     return render(request, 'main.html')
 def upload_csv(request):
     if request.method == 'POST' and request.FILES.get('csv_file'):
@@ -45,8 +55,8 @@ def upload_csv(request):
                     'weight': row.get('weight') if pd.notna(row.get('weight')) else None,
                     'engine_capacity': row.get('engine_capacity'),
                     'city': row.get('city'),
-                    'rating': row.get('rating'),
-                    'num_ratings': row.get('num_ratings'),
+                    'rating': row.get('rating',0),
+                    'num_ratings': row.get('num_ratings',0),
                     'on_time': float(row.get('on_time', 0.0)),
                     'polite_friendly_communication': float(row.get('polite_friendly_communication', 0.0)),
                     'reliable': float(row.get('reliable', 0.0)),
